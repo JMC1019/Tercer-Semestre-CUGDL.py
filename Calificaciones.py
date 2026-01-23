@@ -1,8 +1,6 @@
 registro_alumnos = []
 
 def calculo_promedio(calificaciones):
-    if not calificaciones:
-        return 0.0
     return sum(calificaciones) / len(calificaciones)
 
 def registrar_alumno():
