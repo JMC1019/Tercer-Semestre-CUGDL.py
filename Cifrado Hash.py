@@ -12,7 +12,6 @@ def sha256_de_archivo(ruta_archivo, tam_bloque=4096):
                 if not datos:
                     break
                 sha256.update(datos)
-
         return sha256.hexdigest()
 
     except FileNotFoundError:
