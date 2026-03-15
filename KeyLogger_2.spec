@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['KeyLogger.py'],
+    ['KeyLogger_2.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='KeyLogger',
+    name='KeyLogger_2',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
