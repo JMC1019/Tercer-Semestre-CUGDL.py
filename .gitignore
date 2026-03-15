@@ -1,0 +1,14 @@
+# Ignorar carpetas generadas por PyInstaller
+build/
+dist/
+*.spec
+
+# Ignorar ejecutables y logs locales
+*.exe
+datos_keylogger.txt
+log_basico.txt
+
+# Ignorar basura de Python y PyCharm
+__pycache__/
+.idea/
+.venv/
