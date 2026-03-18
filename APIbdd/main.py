@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import json, os
-
 app = FastAPI()
 DATA_FILE = "estudiantes.json"
 
@@ -21,15 +20,12 @@ def cargar_datos():
 def guardar_datos(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
-
 @app.get("/")
 def home():
     return "Hello World"
-
 @app.get("/estudiantes")
 def listar_estudiantes():
     return cargar_datos()
-
 @app.get("/estudiantes/{id}")
 def read_user(id: int):
     data = cargar_datos()
@@ -37,7 +33,6 @@ def read_user(id: int):
         if isinstance(e.get("id"), int) and e["id"] == id:
             return e
     raise HTTPException(status_code=404, detail="Estudiante no encontrado por id")
-
 @app.get("/estudiantes/email/{email}")
 def obtener_estudiante(email: str):
     data = cargar_datos()
@@ -45,7 +40,6 @@ def obtener_estudiante(email: str):
         if e["email"] == email:
             return e
     raise HTTPException(status_code=404, detail="Estudiante no encontrado")
-
 @app.post("/estudiantes")
 def agregar_estudiante(e: Estudiante):
     data = cargar_datos()
@@ -57,7 +51,6 @@ def agregar_estudiante(e: Estudiante):
     data.append(nuevo_estudiante)
     guardar_datos(data)
     return {"mensaje": "Estudiante agregado correctamente", "data": nuevo_estudiante}
-
 @app.put("/estudiantes/{id}")
 def actualizar_estudiante(id: int, e: Estudiante):
     data = cargar_datos()
@@ -68,7 +61,6 @@ def actualizar_estudiante(id: int, e: Estudiante):
             guardar_datos(data)
             return {"mensaje": "Estudiante actualizado correctamente", "data": data[i]}
     raise HTTPException(status_code=404, detail="Estudiante no encontrado")
-
 @app.delete("/estudiantes/{id}")
 def eliminar_estudiante(id: int):
     data = cargar_datos()
@@ -77,7 +69,6 @@ def eliminar_estudiante(id: int):
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
     guardar_datos(nueva_lista)
     return {"mensaje": f"Estudiante con id {id} eliminado correctamente"}
-
 @app.get("/search")
 def search(q: str, limit: int = 10):
     return {"query": q, "limit": limit}
