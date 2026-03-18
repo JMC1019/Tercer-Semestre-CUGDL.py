@@ -1,0 +1,23 @@
+[
+    {
+        "id": 1,
+        "nombre": "Ana Pérez García",
+        "email": "ana.perez@udg.mx",
+        "carrera": "Ingeniería en Computación",
+        "semestre": 6
+    },
+    {
+        "id": 3,
+        "nombre": "Oswaldo Sanchez",
+        "email": "alumnos.oswa.sanchez@udg.com.mx",
+        "carrera": "Psicología",
+        "semestre": 4
+    },
+    {
+        "id": 4,
+        "nombre": "Ruben Corona",
+        "email": "alumnos.ruben.corona@udg.com.mx",
+        "carrera": "Ciberseguridad",
+        "semestre": 3
+    }
+]
