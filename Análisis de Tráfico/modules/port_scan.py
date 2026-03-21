@@ -1,10 +1,16 @@
 from scapy.all import IP, TCP, sr1, conf
 
-
 def scan_ports(target_ip):
     if target_ip == "127.0.0.1":
-        from scapy.layers.l2 import L3RawSocket
-        conf.L3socket = L3RawSocket
+        try:
+            from scapy.arch.windows import L3WinRawSocket as L3RawSocket
+            conf.L3socket = L3RawSocket
+        except ImportError:
+            try:
+                from scapy.all import L3RawSocket
+                conf.L3socket = L3RawSocket
+            except ImportError:
+                print("[!] Advertencia: No se pudo configurar el socket para localhost.")
 
     common_ports = {
         21: "FTP", 22: "SSH", 23: "Telnet (Inseguro)", 25: "SMTP",
