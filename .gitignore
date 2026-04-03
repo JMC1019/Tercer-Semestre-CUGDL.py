@@ -5,11 +5,18 @@ dist/
 
 # Ignorar ejecutables y logs locales
 *.exe
+*.log
 datos_keylogger.txt
 log_basico.txt
 
-# Ignorar basura de Python y PyCharm
+# Ignorar archivos de Python y entornos
 __pycache__/
-.idea/
+*.py[cod]
 .venv/
-.env
+
+# Ignorar configuración de IDEs
+.idea/
+.vscode/
+
+# SEGURIDAD: Ignorar variables de entorno
+.env*
