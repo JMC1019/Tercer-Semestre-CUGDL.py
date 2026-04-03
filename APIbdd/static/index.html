@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Estudiantes - Dark Mode</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', sans-serif; }
+        .card { background-color: #1e293b; border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .table { color: #f8fafc; border-color: #334155; }
+        .table thead { background-color: #334155; }
+        .btn-primary { background-color: #3b82f6; border: none; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .form-control { background-color: #334155; border: 1px solid #475569; color: white; }
+        .form-control:focus { background-color: #334155; color: white; border-color: #3b82f6; box-shadow: none; }
+        .modal-content { background-color: #1e293b; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="fw-bold"><i class="bi bi-database-fill-lock text-primary"></i> Control de Estudiantes</h1>
+            <button class="btn btn-primary" onclick="mostrarModalCrear()">
+                <i class="bi bi-plus-circle"></i> Nuevo Estudiante
+            </button>
+        </div>
+
+        <div class="card p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Carrera</th>
+                            <th class="text-center">Semestre</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-estudiantes">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEstudiante" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="modalTitulo">Agregar Estudiante</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEstudiante">
+                        <input type="hidden" id="estudianteId">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre Completo</label>
+                            <input type="text" id="nombre" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Carrera</label>
+                            <input type="text" id="carrera" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Semestre</label>
+                            <input type="number" id="semestre" class="form-control" required>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const modal = new bootstrap.Modal(document.getElementById('modalEstudiante'));
+        const form = document.getElementById('formEstudiante');
+        let editando = false;
+
+        // Función para listar (GET)
+        async function cargarEstudiantes() {
+            const res = await fetch('/estudiantes');
+            const data = await res.json();
+            const tabla = document.getElementById('lista-estudiantes');
+            tabla.innerHTML = '';
+            data.forEach(est => {
+                tabla.innerHTML += `
+                    <tr>
+                        <td>${est.nombre}</td>
+                        <td><span class="badge bg-secondary">${est.email}</span></td>
+                        <td>${est.carrera}</td>
+                        <td class="text-center">${est.semestre}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-info me-2" onclick="prepararEdicion('${est._id}', '${est.nombre}', '${est.email}', '${est.carrera}', ${est.semestre})">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarEstudiante('${est._id}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Función para eliminar (DELETE)
+        async function eliminarEstudiante(id) {
+            if(confirm('¿Seguro que quieres borrar a este estudiante?')) {
+                await fetch(`/estudiantes/${id}`, { method: 'DELETE' });
+                cargarEstudiantes();
+            }
+        }
+
+        // Mostrar modal para crear
+        function mostrarModalCrear() {
+            editando = false;
+            form.reset();
+            document.getElementById('modalTitulo').innerText = "Nuevo Estudiante";
+            modal.show();
+        }
+
+        // Preparar modal para editar
+        function prepararEdicion(id, nombre, email, carrera, semestre) {
+            editando = true;
+            document.getElementById('estudianteId').value = id;
+            document.getElementById('nombre').value = nombre;
+            document.getElementById('email').value = email;
+            document.getElementById('carrera').value = carrera;
+            document.getElementById('semestre').value = semestre;
+            document.getElementById('modalTitulo').innerText = "Editar Estudiante";
+            modal.show();
+        }
+
+        // Manejar el envío del formulario (POST/PUT)
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('estudianteId').value;
+            const datos = {
+                nombre: document.getElementById('nombre').value,
+                email: document.getElementById('email').value,
+                carrera: document.getElementById('carrera').value,
+                semestre: parseInt(document.getElementById('semestre').value)
+            };
+
+            const url = editando ? `/estudiantes/${id}` : '/estudiantes';
+            const metodo = editando ? 'PUT' : 'POST';
+
+            await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            modal.hide();
+            cargarEstudiantes();
+        };
+
+        // Cargar datos al iniciar
+        window.onload = cargarEstudiantes;
+    </script>
+</body>
+</html>

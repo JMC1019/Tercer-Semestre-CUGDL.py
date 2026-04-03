@@ -12,3 +12,4 @@ log_basico.txt
 __pycache__/
 .idea/
 .venv/
+.env
