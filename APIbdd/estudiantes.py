@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Query
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 import os
 
 load_dotenv()
@@ -11,23 +13,34 @@ MONGODB_URI = os.getenv("MONGODB_URI")
 DB_NAME = os.getenv("MONGODB_DB", "Actividad1_noSQL")
 COLL_ESTUDIANTES = os.getenv("COLL_ESTUDIANTES", "estudiantes")
 
-app = FastAPI(title="API con FastAPI y MongoDB Atlas")
-
 client: AsyncIOMotorClient | None = None
 db = None
-estudiantes = None
+estudiantes_coll = None
 
-@app.on_event("startup")
-async def startup_db():
-    global client, db, estudiantes
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global client, db, estudiantes_coll
+    # Lógica de Startup
     client = AsyncIOMotorClient(MONGODB_URI)
     db = client[DB_NAME]
-    estudiantes = db[COLL_ESTUDIANTES]
+    estudiantes_coll = db[COLL_ESTUDIANTES]
+    print("Conexión a MongoDB establecida exitosamente.")
 
-@app.on_event("shutdown")
-async def shutdown_db():
+    yield
+
     if client:
         client.close()
+        print("Conexión a MongoDB cerrada de forma segura.")
+
+app = FastAPI(title="API con FastAPI y MongoDB Atlas", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class EstudianteIn(BaseModel):
     nombre: str
@@ -37,41 +50,46 @@ class EstudianteIn(BaseModel):
 
 class EstudianteOut(EstudianteIn):
     id: str = Field(alias="_id")
+
     @field_validator("id", mode="before")
     def objectid_to_str(cls, v):
         if isinstance(v, ObjectId):
             return str(v)
         return v
+
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 @app.get("/")
 def home():
-    return {"ok": True}
+    return {"mensaje": "API conectada a MongoDB Atlas funcionando al 100%"}
 
 @app.get("/estudiantes", response_model=list[EstudianteOut])
-async def listar_estudiantes():
-    return [EstudianteOut(**d) async for d in estudiantes.find({}).limit(50)]
+async def listar_estudiantes(
+        skip: int = Query(0, description="Registros a omitir"),
+        limit: int = Query(50, le=100, description="Límite de registros (máx 100)")
+):
+    return [EstudianteOut(**d) async for d in estudiantes_coll.find({}).skip(skip).limit(limit)]
 
 @app.get("/estudiantes/{id}", response_model=EstudianteOut)
 async def obtener_estudiante(id: str):
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="ID inválido.")
-    doc = await estudiantes.find_one({"_id": ObjectId(id)})
+    doc = await estudiantes_coll.find_one({"_id": ObjectId(id)})
     if not doc:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado.")
     return EstudianteOut(**doc)
 
 @app.post("/estudiantes", response_model=EstudianteOut, status_code=status.HTTP_201_CREATED)
 async def crear_estudiante(e: EstudianteIn):
-    result = await estudiantes.insert_one(e.model_dump())
-    nuevo = await estudiantes.find_one({"_id": result.inserted_id})
+    result = await estudiantes_coll.insert_one(e.model_dump())
+    nuevo = await estudiantes_coll.find_one({"_id": result.inserted_id})
     return EstudianteOut(**nuevo)
 
 @app.put("/estudiantes/{id}", response_model=EstudianteOut)
 async def actualizar_estudiante(id: str, e: EstudianteIn):
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="ID inválido.")
-    result = await estudiantes.find_one_and_update(
+    result = await estudiantes_coll.find_one_and_update(
         {"_id": ObjectId(id)},
         {"$set": e.model_dump()},
         return_document=True
@@ -84,17 +102,10 @@ async def actualizar_estudiante(id: str, e: EstudianteIn):
 async def eliminar_estudiante(id: str):
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="ID inválido.")
-    result = await estudiantes.delete_one({"_id": ObjectId(id)})
+    result = await estudiantes_coll.delete_one({"_id": ObjectId(id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado.")
     return None
-
-@app.get("/estudiantes/email/{email}", response_model=EstudianteOut)
-async def obtener_por_email(email: str):
-    doc = await estudiantes.find_one({"email": email})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Estudiante no encontrado por email.")
-    return EstudianteOut(**doc)
 
 @app.get("/app")
 def app_ui():
