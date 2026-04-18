@@ -7,6 +7,7 @@ from bson import ObjectId
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 import os
+import certifi  # <-- EL SALVAVIDAS DE SEGURIDAD SSL
 
 load_dotenv()
 MONGODB_URI = os.getenv("MONGODB_URI")
@@ -20,11 +21,11 @@ estudiantes_coll = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global client, db, estudiantes_coll
-    # Lógica de Startup
-    client = AsyncIOMotorClient(MONGODB_URI)
+    # Lógica de Startup con validación SSL forzada
+    client = AsyncIOMotorClient(MONGODB_URI, tlsCAFile=certifi.where())
     db = client[DB_NAME]
     estudiantes_coll = db[COLL_ESTUDIANTES]
-    print("Conexión a MongoDB establecida exitosamente.")
+    print("Conexión a MongoDB Atlas establecida exitosamente (SSL Validado).")
 
     yield
 
